@@ -6,6 +6,7 @@
   import { mqttStore } from './lib/stores';
   import type { ConnectionParams } from './lib/mqtt';
   import { _ } from 'svelte-i18n';
+  import logoUrl from './assets/oasis-logo.svg?url';
 
   type Stage = 'configure' | 'control';
 
@@ -130,7 +131,20 @@
     }
   };
 
+  const clearStoredCredentials = () => {
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem(STORAGE_KEY);
+    }
+    remember = false;
+    credentials = {
+      ...DEFAULTS,
+      username: '',
+      password: ''
+    };
+  };
+
   const resetToConfigure = () => {
+    clearStoredCredentials();
     mqttStore.disconnect();
     stage = 'configure';
     formError = null;
@@ -151,41 +165,36 @@
   };
 </script>
 
-<main class="flex min-h-screen flex-col bg-slate-950 text-slate-100">
-  <div class="flex justify-end px-5 pt-6">
-    <LanguageSwitcher />
+<main class="oasis-app text-slate-100">
+  <div class="oasis-overlay">
+    <div class="oasis-header">
+      <img src={logoUrl} alt="Oasis Residence" class="oasis-logo" />
+      <LanguageSwitcher />
+    </div>
+
+    <section class="oasis-content">
+      {#if stage === 'configure'}
+        <SetupStage
+          username={credentials.username}
+          password={credentials.password}
+          remember={remember}
+          formError={formError}
+          connectionError={connection.status === 'error' ? connection.error : undefined}
+          isConnecting={connection.status === 'connecting'}
+          on:update={handleCredentialsUpdate}
+          on:rememberChange={handleRememberChange}
+          on:submit={startConnection}
+        />
+      {:else}
+        <ControlStage
+          deviceId={credentials.deviceId}
+          connection={connection}
+          actionError={formError}
+          on:logout={resetToConfigure}
+          on:reconnect={handleReconnect}
+          on:trigger={handleTrigger}
+        />
+      {/if}
+    </section>
   </div>
-
-  <header class="px-5 pb-8 pt-4 text-center">
-    <h1 class="text-3xl font-semibold tracking-tight sm:text-4xl">{$_('app_title')}</h1>
-    <p class="mt-2 text-sm text-slate-400">
-      {$_('app_subtitle')}
-    </p>
-  </header>
-
-  <section class="mx-auto mb-10 w-full max-w-xl flex-1 px-5">
-    {#if stage === 'configure'}
-      <SetupStage
-        username={credentials.username}
-        password={credentials.password}
-        remember={remember}
-        formError={formError}
-        connectionError={connection.status === 'error' ? connection.error : undefined}
-        isConnecting={connection.status === 'connecting'}
-        on:update={handleCredentialsUpdate}
-        on:rememberChange={handleRememberChange}
-        on:submit={startConnection}
-      />
-    {:else}
-      <ControlStage
-        deviceId={credentials.deviceId}
-        connection={connection}
-        actionError={formError}
-        on:changeDetails={resetToConfigure}
-        on:reconnect={handleReconnect}
-        on:trigger={handleTrigger}
-      />
-    {/if}
-  </section>
-
 </main>

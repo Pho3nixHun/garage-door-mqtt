@@ -6,7 +6,7 @@
   const dispatch = createEventDispatcher<{
     trigger: void;
     reconnect: void;
-    changeDetails: void;
+    logout: void;
   }>();
 
   export let deviceId = '';
@@ -77,7 +77,7 @@
 
   const handleTrigger = () => dispatch('trigger');
   const handleReconnect = () => dispatch('reconnect');
-  const handleChangeDetails = () => dispatch('changeDetails');
+  const handleLogout = () => dispatch('logout');
 
   $: {
     if (garageState !== 'THROTTLED') {
@@ -98,33 +98,33 @@
       <span class={`rounded-full px-3 py-1 text-xs font-semibold uppercase tracking-wide ${statusClass}`}>
         {statusLabel}
       </span>
-      <span class="text-sm text-slate-400">{isConnected ? t('connection_online') : t('connection_offline')}</span>
+      <span class="text-sm text-emerald-200/90">{isConnected ? t('connection_online') : t('connection_offline')}</span>
     </div>
     <button
-      class="rounded-full border border-slate-600/70 px-3 py-1 text-xs font-semibold text-slate-300 transition hover:border-slate-500 hover:text-slate-100"
+      class="rounded-full border border-emerald-300/60 px-3 py-1 text-xs font-semibold text-emerald-100 transition hover:border-emerald-200 hover:text-emerald-50"
       type="button"
-      on:click={handleChangeDetails}
+      on:click={handleLogout}
     >
-      {t('change_details')}
+      {t('button_logout')}
     </button>
   </div>
 
-  <div class="rounded-2xl border border-slate-800/80 bg-slate-900/80 p-6 shadow-lg shadow-black/30 backdrop-blur">
-    <h2 class="text-xl font-semibold text-slate-50">{t('panel_title')}</h2>
-    <p class="mt-1 text-sm text-slate-400">
+  <div class="rounded-3xl border border-emerald-300/50 bg-emerald-950/20 p-6 shadow-xl shadow-emerald-900/30 backdrop-blur">
+    <h2 class="text-xl font-semibold text-emerald-100">{t('panel_title')}</h2>
+    <p class="mt-1 text-sm text-emerald-200/90">
       {t('door_summary', { values: { id: deviceId } })}
     </p>
 
-    <div class="mt-6 grid gap-4 rounded-xl border border-slate-800 bg-slate-950/60 p-4 sm:grid-cols-2">
+    <div class="mt-6 grid gap-4 rounded-xl border border-emerald-400/40 bg-emerald-950/30 p-4 sm:grid-cols-2">
       <div>
-        <p class="text-xs uppercase tracking-wide text-slate-400">{t('section_status')}</p>
-        <p class="mt-2 text-2xl font-semibold text-slate-50">{statusLabel}</p>
-        <p class="mt-2 text-sm text-slate-400">{cooldownMessage}</p>
+        <p class="text-xs uppercase tracking-wide text-emerald-200/80">{t('section_status')}</p>
+        <p class="mt-2 text-2xl font-semibold text-emerald-100">{statusLabel}</p>
+        <p class="mt-2 text-sm text-emerald-200/80">{cooldownMessage}</p>
       </div>
 
       <div>
-        <p class="text-xs uppercase tracking-wide text-slate-400">{t('section_connection')}</p>
-        <p class="mt-2 text-sm text-slate-300">
+        <p class="text-xs uppercase tracking-wide text-emerald-200/80">{t('section_connection')}</p>
+        <p class="mt-2 text-sm text-emerald-200/90">
           {#if connection.status === 'connected'}
             {t('connection_connected')}
           {:else if connection.status === 'connecting'}
@@ -136,33 +136,35 @@
           {/if}
         </p>
 
-        <div class="mt-3 flex gap-2">
-          <button
-            class="rounded-lg border border-slate-700 px-3 py-2 text-xs font-semibold text-slate-200 transition hover:border-slate-600 hover:text-slate-50 disabled:cursor-not-allowed disabled:border-slate-700/70 disabled:text-slate-500"
-            type="button"
-            on:click={handleReconnect}
-            disabled={isConnecting}
-          >
-            {isConnecting ? t('button_connecting') : t('button_try_again')}
-          </button>
-        </div>
+        {#if connection.status === 'error'}
+          <div class="mt-3 flex gap-2">
+            <button
+              class="rounded-lg border border-emerald-300/60 bg-emerald-600/80 px-3 py-2 text-xs font-semibold text-emerald-50 transition hover:bg-emerald-500 disabled:cursor-not-allowed disabled:border-emerald-400/40 disabled:bg-emerald-700/40 disabled:text-emerald-200/50"
+              type="button"
+              on:click={handleReconnect}
+              disabled={isConnecting}
+            >
+              {isConnecting ? t('button_connecting') : t('button_try_again')}
+            </button>
+          </div>
+        {/if}
       </div>
     </div>
 
     {#if connection.error}
-      <div class="mt-4 rounded-lg border border-rose-500/40 bg-rose-500/10 px-3 py-2 text-sm text-rose-200">
+      <div class="mt-4 rounded-lg border border-rose-400/40 bg-rose-500/20 px-3 py-2 text-sm text-rose-100">
         {connection.error}
       </div>
     {/if}
 
     {#if actionError}
-      <div class="mt-4 rounded-lg border border-rose-500/40 bg-rose-500/10 px-3 py-2 text-sm text-rose-200">
+      <div class="mt-4 rounded-lg border border-rose-400/40 bg-rose-500/20 px-3 py-2 text-sm text-rose-100">
         {actionError}
       </div>
     {/if}
 
     <button
-      class="mt-6 w-full rounded-2xl bg-emerald-500 px-6 py-4 text-lg font-semibold text-emerald-950 shadow-lg shadow-emerald-500/30 transition hover:bg-emerald-400 disabled:cursor-not-allowed disabled:bg-slate-700/70 disabled:text-slate-400"
+      class="mt-6 w-full rounded-2xl bg-gradient-to-r from-emerald-500 via-teal-500 to-emerald-400 px-6 py-4 text-lg font-semibold text-emerald-950 shadow-lg shadow-emerald-500/40 transition hover:from-emerald-400 hover:via-teal-400 hover:to-emerald-300 disabled:cursor-not-allowed disabled:from-emerald-700/60 disabled:to-emerald-700/60 disabled:text-emerald-200/60"
       type="button"
       disabled={!canOpen}
       on:click={handleTrigger}
