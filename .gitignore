@@ -11,6 +11,14 @@ sdkconfig.*
 # Local credentials & secrets
 credentials.json
 
+# Node / web tooling
+node_modules/
+pnpm-lock.yaml
+yarn.lock
+web/node_modules/
+web/dist/
+web/.svelte-kit/
+
 # IDE metadata
 .vscode/
 .idea/
