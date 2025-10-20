@@ -1,0 +1,53 @@
+name: Build Firmware
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+
+jobs:
+  firmware:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Cache PlatformIO
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.platformio
+          key: ${{ runner.os }}-platformio-${{ hashFiles('platformio.ini') }}
+          restore-keys: |
+            ${{ runner.os }}-platformio-
+
+      - name: Install PlatformIO
+        run: |
+          python -m pip install --upgrade pip
+          pip install platformio
+
+      - name: Build firmware
+        run: platformio run -e seeed_xiao_esp32c6
+
+      - name: Prepare OTA binary
+        run: |
+          mkdir -p dist
+          cp .pio/build/seeed_xiao_esp32c6/firmware.bin dist/GarageDoor-${{ github.ref_name }}.bin
+
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: firmware-${{ github.ref_name }}
+          path: dist/GarageDoor-${{ github.ref_name }}.bin
+
+      - name: Publish release asset
+        if: github.event_name == 'release'
+        uses: softprops/action-gh-release@v2
+        with:
+          files: dist/GarageDoor-${{ github.ref_name }}.bin
