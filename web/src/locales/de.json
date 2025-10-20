@@ -1,12 +1,12 @@
-{
+﻿{
   "app_title": "Garagentor-Fernbedienung",
   "app_subtitle": "Öffne dein Garagentor sicher über die Cloud-Verbindung.",
   "connect_title": "Mit deinem Tor verbinden",
   "connect_description": "Gib die hinterlegten Zugangsdaten für dein Garagentor ein. Wir merken sie uns fürs nächste Mal.",
   "field_username": "Benutzername",
   "field_password": "Passwort",
-  "placeholder_username": "Dein Broker-Benutzername",
-  "placeholder_password": "Dein Broker-Passwort",
+  "placeholder_username": "benutzername",
+  "placeholder_password": "passwort",
   "remember_label": "Zugangsdaten auf diesem Gerät speichern",
   "button_continue": "Weiter",
   "button_connecting": "Verbinde…",
@@ -40,3 +40,4 @@
   "error_open_signal": "Öffnungssignal konnte nicht gesendet werden.",
   "language_label": "Sprache"
 }
+

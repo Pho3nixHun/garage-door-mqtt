@@ -1,12 +1,12 @@
-{
+﻿{
   "app_title": "Пульт гаражних воріт",
   "app_subtitle": "Відкривайте гараж безпечно через захищене хмарне з’єднання.",
   "connect_title": "Підключення до воріт",
   "connect_description": "Введіть дані, які ви отримали для гаража. Ми запам’ятаємо їх на майбутнє.",
   "field_username": "Ім’я користувача",
   "field_password": "Пароль",
-  "placeholder_username": "Ім’я користувача брокера",
-  "placeholder_password": "Пароль брокера",
+  "placeholder_username": "ім'я користувача",
+  "placeholder_password": "пароль",
   "remember_label": "Запам’ятати ці дані на цьому пристрої",
   "button_continue": "Продовжити",
   "button_connecting": "Підключення…",
@@ -40,3 +40,4 @@
   "error_open_signal": "Не вдалося надіслати сигнал відкривання.",
   "language_label": "Мова"
 }
+

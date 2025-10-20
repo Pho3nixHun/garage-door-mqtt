@@ -1,12 +1,12 @@
-{
+﻿{
   "app_title": "Garage Door Remote",
   "app_subtitle": "Open your garage safely through the secure cloud connection.",
   "connect_title": "Connect to your door",
   "connect_description": "Enter the details provided for your garage door. We'll remember them for next time.",
   "field_username": "Username",
   "field_password": "Password",
-  "placeholder_username": "Your broker username",
-  "placeholder_password": "Your broker password",
+  "placeholder_username": "username",
+  "placeholder_password": "password",
   "remember_label": "Remember these details on this device",
   "button_continue": "Continue",
   "button_connecting": "Connecting…",
@@ -40,3 +40,4 @@
   "error_open_signal": "Unable to send the open signal.",
   "language_label": "Language"
 }
+

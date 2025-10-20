@@ -1,12 +1,12 @@
-{
+﻿{
   "app_title": "Пульт гаражных ворот",
   "app_subtitle": "Открывайте гараж безопасно через защищённое облачное соединение.",
   "connect_title": "Подключение к воротам",
   "connect_description": "Введите данные, выданные для ваших ворот. Мы запомним их на будущее.",
   "field_username": "Имя пользователя",
   "field_password": "Пароль",
-  "placeholder_username": "Имя пользователя брокера",
-  "placeholder_password": "Пароль брокера",
+  "placeholder_username": "имя пользователя",
+  "placeholder_password": "пароль",
   "remember_label": "Запомнить данные на этом устройстве",
   "button_continue": "Продолжить",
   "button_connecting": "Подключение…",
@@ -40,3 +40,4 @@
   "error_open_signal": "Не удалось отправить сигнал открытия.",
   "language_label": "Язык"
 }
+

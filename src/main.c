@@ -116,6 +116,14 @@ static void handle_publish_snapshot(void);
 static void process_command_payload(const char *data, int len);
 static void publish_ota_status(const char *status, const char *detail, esp_err_t err);
 static bool is_valid_release_component(const char *value, size_t max_len);
+static void apply_debounce_timer_config(void);
+static void apply_heartbeat_timer_config(void);
+static esp_err_t garage_config_read_json_string(char **out_json);
+static esp_err_t garage_config_persist_updates(bool update_heartbeat, int heartbeat_value,
+                                               bool update_debounce, int debounce_value,
+                                               bool update_relay_pulse, int relay_pulse_value);
+static void debounce_timer_callback(TimerHandle_t timer);
+static void heartbeat_timer_callback(TimerHandle_t timer);
 
 static char *duplicate_json_string_field(const cJSON *root, const char *field)
 {
@@ -210,6 +218,118 @@ static void garage_config_load(void)
     cJSON_Delete(root);
 
     ESP_LOGI(TAG, "Loaded garage config for device '%s'", s_config.device_id);
+}
+
+static esp_err_t garage_config_save_json_string(const char *json)
+{
+    if (!json) {
+        return ESP_ERR_INVALID_ARG;
+    }
+
+    nvs_handle_t handle;
+    esp_err_t err = nvs_open(GARAGE_CONFIG_NAMESPACE, NVS_READWRITE, &handle);
+    if (err != ESP_OK) {
+        return err;
+    }
+
+    err = nvs_set_str(handle, GARAGE_CONFIG_KEY, json);
+    if (err == ESP_OK) {
+        err = nvs_commit(handle);
+    }
+    nvs_close(handle);
+    return err;
+}
+
+static esp_err_t garage_config_read_json_string(char **out_json)
+{
+    if (!out_json) {
+        return ESP_ERR_INVALID_ARG;
+    }
+
+    nvs_handle_t handle;
+    esp_err_t err = nvs_open(GARAGE_CONFIG_NAMESPACE, NVS_READONLY, &handle);
+    if (err != ESP_OK) {
+        return err;
+    }
+
+    size_t json_size = 0;
+    err = nvs_get_str(handle, GARAGE_CONFIG_KEY, NULL, &json_size);
+    if (err != ESP_OK || json_size == 0) {
+        nvs_close(handle);
+        return err != ESP_OK ? err : ESP_ERR_NOT_FOUND;
+    }
+
+    char *json = malloc(json_size);
+    if (!json) {
+        nvs_close(handle);
+        return ESP_ERR_NO_MEM;
+    }
+
+    err = nvs_get_str(handle, GARAGE_CONFIG_KEY, json, &json_size);
+    nvs_close(handle);
+    if (err != ESP_OK) {
+        free(json);
+        return err;
+    }
+
+    *out_json = json;
+    return ESP_OK;
+}
+
+static esp_err_t garage_config_persist_updates(bool update_heartbeat, int heartbeat_value,
+                                               bool update_debounce, int debounce_value,
+                                               bool update_relay_pulse, int relay_pulse_value)
+{
+    if (!update_heartbeat && !update_debounce && !update_relay_pulse) {
+        return ESP_OK;
+    }
+
+    char *json = NULL;
+    esp_err_t err = garage_config_read_json_string(&json);
+    if (err != ESP_OK) {
+        return err;
+    }
+
+    cJSON *root = cJSON_Parse(json);
+    free(json);
+    if (!root) {
+        return ESP_FAIL;
+    }
+
+    if (update_heartbeat) {
+        cJSON *item = cJSON_GetObjectItemCaseSensitive(root, "CONFIG_GARAGE_HEARTBEAT_INTERVAL_S");
+        if (!item) {
+            cJSON_AddNumberToObject(root, "CONFIG_GARAGE_HEARTBEAT_INTERVAL_S", heartbeat_value);
+        } else {
+            cJSON_SetNumberValue(item, heartbeat_value);
+        }
+    }
+    if (update_debounce) {
+        cJSON *item = cJSON_GetObjectItemCaseSensitive(root, "CONFIG_GARAGE_DEBOUNCE_MS");
+        if (!item) {
+            cJSON_AddNumberToObject(root, "CONFIG_GARAGE_DEBOUNCE_MS", debounce_value);
+        } else {
+            cJSON_SetNumberValue(item, debounce_value);
+        }
+    }
+    if (update_relay_pulse) {
+        cJSON *item = cJSON_GetObjectItemCaseSensitive(root, "CONFIG_GARAGE_RELAY_PULSE_MS");
+        if (!item) {
+            cJSON_AddNumberToObject(root, "CONFIG_GARAGE_RELAY_PULSE_MS", relay_pulse_value);
+        } else {
+            cJSON_SetNumberValue(item, relay_pulse_value);
+        }
+    }
+
+    char *serialized = cJSON_PrintUnformatted(root);
+    cJSON_Delete(root);
+    if (!serialized) {
+        return ESP_ERR_NO_MEM;
+    }
+
+    err = garage_config_save_json_string(serialized);
+    cJSON_free(serialized);
+    return err;
 }
 
 static void ensure(bool condition, const char *message)
@@ -360,6 +480,57 @@ static bool is_valid_release_component(const char *value, size_t max_len)
         }
     }
     return true;
+}
+
+static void apply_debounce_timer_config(void)
+{
+    if (s_config.debounce_ms > 0) {
+        TickType_t period_ticks = pdMS_TO_TICKS(s_config.debounce_ms);
+        if (!s_debounce_timer) {
+            s_debounce_timer = xTimerCreate("debounce", period_ticks, pdFALSE, NULL, debounce_timer_callback);
+            if (!s_debounce_timer) {
+                ESP_LOGE(TAG, "Failed to create debounce timer");
+            }
+        } else {
+            if (xTimerIsTimerActive(s_debounce_timer)) {
+                xTimerStop(s_debounce_timer, 0);
+                xTimerChangePeriod(s_debounce_timer, period_ticks, 0);
+                xTimerStart(s_debounce_timer, 0);
+            } else {
+                xTimerChangePeriod(s_debounce_timer, period_ticks, 0);
+            }
+        }
+    } else if (s_debounce_timer) {
+        xTimerStop(s_debounce_timer, 0);
+        xTimerDelete(s_debounce_timer, 0);
+        s_debounce_timer = NULL;
+    }
+}
+
+static void apply_heartbeat_timer_config(void)
+{
+    if (s_config.heartbeat_interval_s > 0) {
+        TickType_t period_ticks = pdMS_TO_TICKS(s_config.heartbeat_interval_s * 1000);
+        if (!s_heartbeat_timer) {
+            s_heartbeat_timer = xTimerCreate("heartbeat", period_ticks, pdTRUE, NULL, heartbeat_timer_callback);
+            if (!s_heartbeat_timer) {
+                ESP_LOGE(TAG, "Failed to create heartbeat timer");
+            } else {
+                xTimerStart(s_heartbeat_timer, 0);
+            }
+        } else {
+            bool was_active = xTimerIsTimerActive(s_heartbeat_timer);
+            if (was_active) {
+                xTimerStop(s_heartbeat_timer, 0);
+            }
+            xTimerChangePeriod(s_heartbeat_timer, period_ticks, 0);
+            xTimerStart(s_heartbeat_timer, 0);
+        }
+    } else if (s_heartbeat_timer) {
+        xTimerStop(s_heartbeat_timer, 0);
+        xTimerDelete(s_heartbeat_timer, 0);
+        s_heartbeat_timer = NULL;
+    }
 }
 
 static void update_status_led(void)
@@ -706,6 +877,86 @@ static void process_command_payload(const char *data, int len)
         if (strcmp(type->valuestring, "open") == 0) {
             ESP_LOGI(TAG, "Received open command via MQTT");
             control_post(CONTROL_CMD_OPEN);
+        } else if (strcmp(type->valuestring, "config_update") == 0) {
+            bool update_heartbeat = false;
+            bool update_debounce = false;
+            bool update_relay = false;
+            int new_heartbeat = 0;
+            int new_debounce = 0;
+            int new_relay_pulse = 0;
+
+            const cJSON *heartbeat = cJSON_GetObjectItemCaseSensitive(root, "heartbeatIntervalS");
+            if (heartbeat) {
+                if (!cJSON_IsNumber(heartbeat)) {
+                    ESP_LOGW(TAG, "heartbeatIntervalS must be a number");
+                    goto cleanup;
+                }
+                new_heartbeat = heartbeat->valueint;
+                if (new_heartbeat < 0) {
+                    ESP_LOGW(TAG, "heartbeatIntervalS must be >= 0");
+                    goto cleanup;
+                }
+                update_heartbeat = true;
+            }
+
+            const cJSON *debounce = cJSON_GetObjectItemCaseSensitive(root, "debounceMs");
+            if (debounce) {
+                if (!cJSON_IsNumber(debounce)) {
+                    ESP_LOGW(TAG, "debounceMs must be a number");
+                    goto cleanup;
+                }
+                new_debounce = debounce->valueint;
+                if (new_debounce < 0) {
+                    ESP_LOGW(TAG, "debounceMs must be >= 0");
+                    goto cleanup;
+                }
+                update_debounce = true;
+            }
+
+            const cJSON *pulse = cJSON_GetObjectItemCaseSensitive(root, "relayPulseMs");
+            if (pulse) {
+                if (!cJSON_IsNumber(pulse)) {
+                    ESP_LOGW(TAG, "relayPulseMs must be a number");
+                    goto cleanup;
+                }
+                new_relay_pulse = pulse->valueint;
+                if (new_relay_pulse <= 0) {
+                    ESP_LOGW(TAG, "relayPulseMs must be > 0");
+                    goto cleanup;
+                }
+                update_relay = true;
+            }
+
+            if (!update_heartbeat && !update_debounce && !update_relay) {
+                ESP_LOGW(TAG, "config_update command did not include supported fields");
+                goto cleanup;
+            }
+
+            esp_err_t persist_err = garage_config_persist_updates(update_heartbeat, new_heartbeat,
+                                                                  update_debounce, new_debounce,
+                                                                  update_relay, new_relay_pulse);
+            if (persist_err != ESP_OK) {
+                ESP_LOGE(TAG, "Failed to persist config update: %s", esp_err_to_name(persist_err));
+                goto cleanup;
+            }
+
+            if (update_heartbeat) {
+                s_config.heartbeat_interval_s = new_heartbeat;
+                apply_heartbeat_timer_config();
+            }
+            if (update_debounce) {
+                s_config.debounce_ms = new_debounce;
+                apply_debounce_timer_config();
+            }
+            if (update_relay) {
+                s_config.relay_pulse_ms = new_relay_pulse;
+            }
+
+            ESP_LOGI(TAG, "Config updated (heartbeat=%s, debounce=%s, relayPulse=%s)",
+                     update_heartbeat ? "yes" : "no",
+                     update_debounce ? "yes" : "no",
+                     update_relay ? "yes" : "no");
+            publish_state_message("state", true, NULL, 0);
         } else if (strcmp(type->valuestring, "ota") == 0) {
             const cJSON *tag = cJSON_GetObjectItemCaseSensitive(root, "tag");
             const cJSON *asset = cJSON_GetObjectItemCaseSensitive(root, "asset");
@@ -728,6 +979,7 @@ static void process_command_payload(const char *data, int len)
         ESP_LOGW(TAG, "Command missing type field");
     }
 
+cleanup:
     cJSON_Delete(root);
 }
 
@@ -802,21 +1054,8 @@ void app_main(void)
         ESP_ERROR_CHECK(gpio_set_level(s_config.status_led_gpio, 0));
     }
 
-    if (s_config.debounce_ms > 0) {
-        s_debounce_timer = xTimerCreate("debounce", pdMS_TO_TICKS(s_config.debounce_ms), pdFALSE, NULL, debounce_timer_callback);
-        ensure(s_debounce_timer != NULL, "Failed to create debounce timer");
-    }
-
-    if (s_config.heartbeat_interval_s > 0) {
-        s_heartbeat_timer = xTimerCreate(
-            "heartbeat",
-            pdMS_TO_TICKS(s_config.heartbeat_interval_s * 1000),
-            pdTRUE,
-            NULL,
-            heartbeat_timer_callback);
-        ensure(s_heartbeat_timer != NULL, "Failed to create heartbeat timer");
-        xTimerStart(s_heartbeat_timer, 0);
-    }
+    apply_debounce_timer_config();
+    apply_heartbeat_timer_config();
 
     BaseType_t task_created = xTaskCreate(control_task, "control_task", 4096, NULL, 5, NULL);
     ensure(task_created == pdPASS, "Failed to create control task");

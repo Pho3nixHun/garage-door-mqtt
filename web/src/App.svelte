@@ -1,8 +1,9 @@
-<script lang="ts">
+﻿<script lang="ts">
   import { onMount } from 'svelte';
   import SetupStage from './components/SetupStage.svelte';
   import ControlStage from './components/ControlStage.svelte';
   import LanguageSwitcher from './components/LanguageSwitcher.svelte';
+  import Button from './components/ui/Button.svelte';
   import { mqttStore } from './lib/stores';
   import type { ConnectionParams } from './lib/mqtt';
   import { _ } from 'svelte-i18n';
@@ -169,7 +170,14 @@
   <div class="oasis-overlay">
     <div class="oasis-header">
       <img src={logoUrl} alt="Oasis Residence" class="oasis-logo" />
-      <LanguageSwitcher />
+      <div class="oasis-header-controls">
+        <LanguageSwitcher />
+        {#if stage === 'control'}
+          <Button variant="outline" size="sm" on:click={resetToConfigure}>
+            {$_('button_logout')}
+          </Button>
+        {/if}
+      </div>
     </div>
 
     <section class="oasis-content">
@@ -198,3 +206,5 @@
     </section>
   </div>
 </main>
+
+

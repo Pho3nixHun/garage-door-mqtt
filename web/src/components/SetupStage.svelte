@@ -1,6 +1,8 @@
-<script lang="ts">
+﻿<script lang="ts">
   import { createEventDispatcher } from 'svelte';
   import { _ } from 'svelte-i18n';
+  import Button from './ui/Button.svelte';
+  import Card from './ui/Card.svelte';
 
   type Field = 'username' | 'password';
 
@@ -31,18 +33,19 @@
     dispatch('submit');
   };
 </script>
+<Card>
+  <div slot="header" class="space-y-1">
+    <h2 class="text-xl font-semibold text-emerald-100">{$_('connect_title')}</h2>
+    <p class="text-sm text-emerald-200/90">
+      {$_('connect_description')}
+    </p>
+  </div>
 
-<div class="rounded-3xl border border-emerald-300/40 bg-white/85 p-6 text-emerald-900 shadow-xl shadow-emerald-900/20 backdrop-blur">
-  <h2 class="text-xl font-semibold text-emerald-900">{$_('connect_title')}</h2>
-  <p class="mt-1 text-sm text-emerald-700/80">
-    {$_('connect_description')}
-  </p>
-
-  <div class="mt-5 space-y-4">
+  <div slot="content" class="space-y-4">
     <label class="grid gap-2">
-      <span class="text-sm font-medium text-emerald-800">{$_('field_username')}</span>
+      <span class="text-sm font-medium text-emerald-200/90">{$_('field_username')}</span>
       <input
-        class="w-full rounded-xl border border-emerald-300 bg-white/70 px-3 py-2 text-sm text-emerald-900 placeholder-emerald-500 outline-none focus:border-amber-300 focus:ring-2 focus:ring-amber-200/60"
+        class="w-full rounded-xl border border-emerald-400/50 bg-emerald-950/40 px-3 py-2 text-sm text-emerald-100 placeholder-emerald-300/70 outline-none transition focus:border-emerald-200 focus:ring-2 focus:ring-emerald-200/60"
         type="text"
         autocomplete="username"
         placeholder={$_('placeholder_username')}
@@ -52,9 +55,9 @@
     </label>
 
     <label class="grid gap-2">
-      <span class="text-sm font-medium text-emerald-800">{$_('field_password')}</span>
+      <span class="text-sm font-medium text-emerald-200/90">{$_('field_password')}</span>
       <input
-        class="w-full rounded-xl border border-emerald-300 bg-white/70 px-3 py-2 text-sm text-emerald-900 placeholder-emerald-500 outline-none focus:border-amber-300 focus:ring-2 focus:ring-amber-200/60"
+        class="w-full rounded-xl border border-emerald-400/50 bg-emerald-950/40 px-3 py-2 text-sm text-emerald-100 placeholder-emerald-300/70 outline-none transition focus:border-emerald-200 focus:ring-2 focus:ring-emerald-200/60"
         type="password"
         autocomplete="current-password"
         placeholder={$_('placeholder_password')}
@@ -63,10 +66,10 @@
       />
     </label>
 
-    <label class="flex items-center gap-3 text-sm text-emerald-700/90">
+    <label class="flex items-center gap-3 text-sm text-emerald-200/80">
       <input
         type="checkbox"
-        class="h-4 w-4 rounded border border-emerald-400 bg-white text-emerald-600 focus:ring-emerald-400"
+        class="h-4 w-4 rounded border border-emerald-400/70 bg-transparent text-emerald-200 focus:ring-emerald-300"
         checked={remember}
         on:change={handleRememberChange}
       />
@@ -74,24 +77,24 @@
     </label>
 
     {#if formError}
-      <div class="rounded-lg border border-rose-400/40 bg-rose-500/10 px-3 py-2 text-sm text-rose-700">
+      <div class="rounded-xl border border-rose-400/40 bg-rose-500/20 px-4 py-3 text-sm text-rose-100">
         {formError}
       </div>
     {/if}
 
     {#if connectionError}
-      <div class="rounded-lg border border-rose-400/40 bg-rose-500/10 px-3 py-2 text-sm text-rose-700">
+      <div class="rounded-xl border border-rose-400/40 bg-rose-500/20 px-4 py-3 text-sm text-rose-100">
         {connectionError}
       </div>
     {/if}
-
-    <button
-      class="w-full rounded-xl bg-gradient-to-r from-emerald-500 via-teal-500 to-emerald-400 px-4 py-3 text-base font-semibold text-emerald-950 shadow-lg shadow-emerald-500/40 transition hover:from-emerald-400 hover:via-teal-400 hover:to-emerald-300 disabled:cursor-not-allowed disabled:from-emerald-700/60 disabled:to-emerald-700/60 disabled:text-emerald-200/60"
-      type="button"
-      on:click={handleSubmit}
-      disabled={isConnecting}
-    >
-      {isConnecting ? $_('button_connecting') : $_('button_continue')}
-    </button>
   </div>
-</div>
+
+  <div slot="footer">
+    <Button variant="solid" size="md" fullWidth on:click={handleSubmit} disabled={isConnecting}>
+      {isConnecting ? $_('button_connecting') : $_('button_continue')}
+    </Button>
+  </div>
+</Card>
+
+
+

@@ -1,12 +1,12 @@
-{
+﻿{
   "app_title": "Diaľkové ovládanie garážovej brány",
   "app_subtitle": "Otvorte garáž bezpečne cez zabezpečené cloudové pripojenie.",
   "connect_title": "Pripojenie k bráne",
   "connect_description": "Zadajte údaje, ktoré ste dostali k bráne. Nabudúce si ich zapamätáme.",
   "field_username": "Používateľské meno",
   "field_password": "Heslo",
-  "placeholder_username": "Používateľské meno brokera",
-  "placeholder_password": "Heslo brokera",
+  "placeholder_username": "používateľské meno",
+  "placeholder_password": "heslo",
   "remember_label": "Zapamätať údaje na tomto zariadení",
   "button_continue": "Pokračovať",
   "button_connecting": "Pripája sa…",
@@ -40,3 +40,4 @@
   "error_open_signal": "Nepodarilo sa odoslať signál na otvorenie.",
   "language_label": "Jazyk"
 }
+

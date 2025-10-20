@@ -1,12 +1,12 @@
-{
+﻿{
   "app_title": "Garázskapu távvezérlő",
   "app_subtitle": "Nyisd ki a garázskaput biztonságosan a felhőkapcsolaton keresztül.",
   "connect_title": "Csatlakozás a kapuhoz",
   "connect_description": "Add meg a garázskapudhoz kapott adatokat. Emlékezni fogunk rájuk legközelebb is.",
   "field_username": "Felhasználónév",
   "field_password": "Jelszó",
-  "placeholder_username": "Bróker felhasználónév",
-  "placeholder_password": "Bróker jelszó",
+  "placeholder_username": "felhasználónév",
+  "placeholder_password": "jelszó",
   "remember_label": "Jegyezze meg ezeket az adatokat ezen az eszközön",
   "button_continue": "Tovább",
   "button_connecting": "Csatlakozás…",
@@ -40,3 +40,4 @@
   "error_open_signal": "Nem sikerült elküldeni a nyitási jelet.",
   "language_label": "Nyelv"
 }
+

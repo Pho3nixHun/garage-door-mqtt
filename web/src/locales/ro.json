@@ -1,12 +1,12 @@
-{
+﻿{
   "app_title": "Telecomandă pentru garaj",
   "app_subtitle": "Deschide garajul în siguranță prin conexiunea cloud securizată.",
   "connect_title": "Conectează-te la ușă",
   "connect_description": "Introdu datele primite pentru garaj. Le păstrăm pentru data viitoare.",
   "field_username": "Utilizator",
   "field_password": "Parolă",
-  "placeholder_username": "Numele de utilizator al brokerului",
-  "placeholder_password": "Parola brokerului",
+  "placeholder_username": "utilizator",
+  "placeholder_password": "parolă",
   "remember_label": "Memorează aceste date pe acest dispozitiv",
   "button_continue": "Continuă",
   "button_connecting": "Se conectează…",
@@ -40,3 +40,4 @@
   "error_open_signal": "Nu s-a putut trimite semnalul de deschidere.",
   "language_label": "Limba"
 }
+
