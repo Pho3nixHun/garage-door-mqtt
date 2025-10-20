@@ -1,0 +1,55 @@
+menu "Garage Door Configuration"
+
+config GARAGE_WIFI_SSID
+    string "Wi-Fi SSID"
+    default "pho3nix"
+
+config GARAGE_WIFI_PASSWORD
+    string "Wi-Fi Password"
+    default "31415926"
+
+config GARAGE_DEVICE_ID
+    string "Device identifier"
+    default "garage-esp32c6"
+
+config GARAGE_MQTT_HOST
+    string "MQTT broker host"
+    default "b406d4a112e343469636dde3b36c432d.s1.eu.hivemq.cloud"
+
+config GARAGE_MQTT_PORT
+    int "MQTT broker TLS port"
+    default 8883
+
+config GARAGE_MQTT_USERNAME
+    string "MQTT username"
+    default "esp32"
+
+config GARAGE_MQTT_PASSWORD
+    string "MQTT password"
+    default "6TRAPxwWbXUGhdF"
+
+config GARAGE_RELAY_GPIO
+    int "Relay GPIO pin"
+    default 2
+
+config GARAGE_STATUS_LED_GPIO
+    int "Status LED GPIO pin (-1 to disable)"
+    default 1
+
+config GARAGE_RELAY_ACTIVE_HIGH
+    bool "Relay is active high (disable for active-low modules)"
+    default y
+
+config GARAGE_RELAY_PULSE_MS
+    int "Relay pulse duration (ms)"
+    default 500
+
+config GARAGE_DEBOUNCE_MS
+    int "Debounce duration after trigger (ms)"
+    default 30000
+
+config GARAGE_HEARTBEAT_INTERVAL_S
+    int "MQTT heartbeat interval (seconds)"
+    default 60
+
+endmenu
