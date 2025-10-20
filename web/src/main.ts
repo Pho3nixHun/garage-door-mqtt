@@ -8,10 +8,14 @@ if (!target) {
   throw new Error('Root element #app not found');
 }
 
-await setupI18n();
+const bootstrap = async () => {
+  await setupI18n();
 
-const app = new App({
-  target
-});
+  const app = new App({
+    target
+  });
 
-export default app;
+  return app;
+};
+
+export default bootstrap();
