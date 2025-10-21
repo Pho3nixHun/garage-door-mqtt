@@ -85,17 +85,14 @@
 </script>
 
 <div class="space-y-5">
-  <div class="flex items-center justify-between gap-3">
-    <div class="flex items-center gap-3">
-      <Tag tone={statusTone}>
-        {statusLabel}
-      </Tag>
-      <span class="text-sm text-emerald-200/90">{isConnected ? t('connection_online') : t('connection_offline')}</span>
-    </div>
-  </div>
-
   <Card>
     <div slot="header" class="space-y-1">
+      <div class="flex items-center justify-between gap-3">
+        <Tag tone={statusTone}>
+          {statusLabel}
+        </Tag>
+        <span class="text-sm text-emerald-200/90">{isConnected ? t('connection_online') : t('connection_offline')}</span>
+      </div>
       <h2 class="text-xl font-semibold text-emerald-100">{t('panel_title')}</h2>
       <p class="text-sm text-emerald-200/90">
         {t('door_summary', { values: { id: deviceId } })}
