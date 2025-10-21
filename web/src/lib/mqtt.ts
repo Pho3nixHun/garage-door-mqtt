@@ -78,8 +78,13 @@ export const createMqttStore = () => {
   const { subscribe, set, update } = writable<MqttStoreValue>({ ...initialState });
   let client: MqttClient | undefined;
   let activeConnection: ResolvedConnection | undefined;
+  let reconnectTimeout: ReturnType<typeof setTimeout> | undefined;
 
   const cleanupClient = () => {
+    if (reconnectTimeout) {
+      clearTimeout(reconnectTimeout);
+      reconnectTimeout = undefined;
+    }
     if (client) {
       client.removeAllListeners();
       client.end(true);
@@ -87,9 +92,7 @@ export const createMqttStore = () => {
     }
   };
 
-  const connectToBroker = (params: ConnectionParams) => {
-    const resolved = resolveTopics(params);
-
+  function connectWithResolved(resolved: ResolvedConnection) {
     cleanupClient();
 
     const options: IClientOptions = {
@@ -161,6 +164,7 @@ export const createMqttStore = () => {
         status: 'error',
         error: err?.message ?? 'MQTT connection error'
       }));
+      scheduleReconnect();
     });
 
     client.on('close', () => {
@@ -168,7 +172,26 @@ export const createMqttStore = () => {
         ...state,
         status: 'disconnected'
       }));
+      scheduleReconnect();
     });
+  }
+
+  function scheduleReconnect() {
+    const resolved = activeConnection;
+    if (!resolved) {
+      return;
+    }
+    if (reconnectTimeout) {
+      clearTimeout(reconnectTimeout);
+    }
+    reconnectTimeout = setTimeout(() => {
+      connectWithResolved(resolved);
+    }, 5000);
+  }
+
+  const connectToBroker = (params: ConnectionParams) => {
+    const resolved = resolveTopics(params);
+    connectWithResolved(resolved);
   };
 
   const disconnect = () => {
