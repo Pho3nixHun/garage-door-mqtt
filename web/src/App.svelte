@@ -5,13 +5,19 @@
   import LanguageSwitcher from './components/LanguageSwitcher.svelte';
   import Button from './components/ui/Button.svelte';
   import { mqttStore } from './lib/stores';
-  import type { ConnectionParams } from './lib/mqtt';
+  import type { ConnectionParams, MqttStoreValue } from './lib/mqtt';
   import { _ } from 'svelte-i18n';
   import logoUrl from './assets/oasis-logo.svg?url';
+
+  interface BeforeInstallPromptEvent extends Event {
+    prompt: () => Promise<void>;
+    userChoice: Promise<{ outcome: 'accepted' | 'dismissed'; platform: string }>;
+  }
 
   type Stage = 'configure' | 'control';
 
   const STORAGE_KEY = 'garage-door-web::connection';
+  const AUTO_OPEN_STORAGE_KEY = 'garage-door-web::auto-open';
 
   type StoredConnection = ConnectionParams & { remember: boolean };
 
@@ -26,6 +32,13 @@
   let remember = true;
   let formError: string | null = null;
   let credentials: ConnectionParams = { ...DEFAULTS };
+  let autoTrigger = false;
+  let autoTriggerHandled = false;
+  let lastKnownState: MqttStoreValue = { status: 'disconnected', garageState: 'UNKNOWN' };
+  let autoOpenEnabled = false;
+  let deferredInstallPrompt: BeforeInstallPromptEvent | null = null;
+  let showInstallPrompt = false;
+  let installPromptDismissed = false;
 
   $: connection = $mqttStore;
 
@@ -57,6 +70,24 @@
     }
   };
 
+  const loadAutoOpenPreference = () => {
+    if (typeof window === 'undefined') {
+      return false;
+    }
+    return window.localStorage.getItem(AUTO_OPEN_STORAGE_KEY) === '1';
+  };
+
+  const persistAutoOpenPreference = (value: boolean) => {
+    if (typeof window === 'undefined') {
+      return;
+    }
+    if (value) {
+      window.localStorage.setItem(AUTO_OPEN_STORAGE_KEY, '1');
+    } else {
+      window.localStorage.removeItem(AUTO_OPEN_STORAGE_KEY);
+    }
+  };
+
   const persistCredentials = () => {
     if (!remember || typeof window === 'undefined') {
       if (typeof window !== 'undefined') {
@@ -71,6 +102,16 @@
     };
 
     localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
+  };
+
+  const clearAutoTriggerParam = () => {
+    if (typeof window === 'undefined') {
+      return;
+    }
+    const url = new URL(window.location.href);
+    url.searchParams.delete('autotrigger');
+    url.searchParams.delete('action');
+    window.history.replaceState({}, '', url.toString());
   };
 
   const connectWithCredentials = () => {
@@ -88,6 +129,61 @@
   };
 
   onMount(() => {
+    const unsubscribe = mqttStore.subscribe((state) => {
+      lastKnownState = state;
+    });
+
+    const handleVisibilityChange = () => {
+      if (typeof document === 'undefined') {
+        return;
+      }
+      if (document.visibilityState === 'visible') {
+        if (stage === 'control' && lastKnownState.status !== 'connected' && lastKnownState.status !== 'connecting') {
+          if (lastKnownState.connection) {
+            mqttStore.connect({
+              url: lastKnownState.connection.url,
+              deviceId: lastKnownState.connection.deviceId,
+              username: credentials.username,
+              password: credentials.password,
+              commandTopic: lastKnownState.connection.commandTopic,
+              stateTopic: lastKnownState.connection.stateTopic
+            });
+          } else {
+            connectWithCredentials();
+          }
+        }
+      }
+    };
+
+    const handleBeforeInstallPrompt = (event: Event) => {
+      if (installPromptDismissed) {
+        return;
+      }
+      event.preventDefault();
+      deferredInstallPrompt = event as BeforeInstallPromptEvent;
+      showInstallPrompt = true;
+    };
+
+    const handleAppInstalled = () => {
+      deferredInstallPrompt = null;
+      showInstallPrompt = false;
+      installPromptDismissed = true;
+    };
+
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      autoTrigger = params.get('autotrigger') === '1' || params.get('action') === 'open';
+      autoTriggerHandled = false;
+      autoOpenEnabled = loadAutoOpenPreference();
+
+      window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt as EventListener);
+      window.addEventListener('appinstalled', handleAppInstalled);
+    }
+
+    if (typeof document !== 'undefined') {
+      document.addEventListener('visibilitychange', handleVisibilityChange);
+    }
+
     const stored = loadStoredCredentials();
     if (stored) {
       credentials = {
@@ -102,6 +198,17 @@
       stage = 'control';
       connectWithCredentials();
     }
+
+    return () => {
+      unsubscribe();
+      if (typeof document !== 'undefined') {
+        document.removeEventListener('visibilitychange', handleVisibilityChange);
+      }
+      if (typeof window !== 'undefined') {
+        window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt as EventListener);
+        window.removeEventListener('appinstalled', handleAppInstalled);
+      }
+    };
   });
 
   const startConnection = () => {
@@ -149,6 +256,9 @@
     mqttStore.disconnect();
     stage = 'configure';
     formError = null;
+    autoTrigger = false;
+    autoTriggerHandled = false;
+    clearAutoTriggerParam();
   };
 
   const handleReconnect = () => {
@@ -164,6 +274,35 @@
       formError = error instanceof Error ? error.message : $_('error_open_signal');
     }
   };
+
+  const handleAutoTriggered = () => {
+    autoTrigger = false;
+    autoTriggerHandled = true;
+    clearAutoTriggerParam();
+  };
+
+  const handleAutoOpenChange = (event: CustomEvent<boolean>) => {
+    autoOpenEnabled = event.detail;
+    persistAutoOpenPreference(autoOpenEnabled);
+  };
+
+  const handleInstallClick = async () => {
+    if (!deferredInstallPrompt) {
+      return;
+    }
+    try {
+      await deferredInstallPrompt.prompt();
+      const choice = await deferredInstallPrompt.userChoice;
+      if (choice.outcome === 'dismissed') {
+        installPromptDismissed = true;
+      }
+    } catch (error) {
+      console.warn('[pwa] install prompt failed', error);
+    } finally {
+      deferredInstallPrompt = null;
+      showInstallPrompt = false;
+    }
+  };
 </script>
 
 <main class="oasis-app text-slate-100">
@@ -172,6 +311,11 @@
       <img src={logoUrl} alt="Oasis Residence" class="oasis-logo" />
       <div class="oasis-header-controls">
         <LanguageSwitcher />
+        {#if showInstallPrompt}
+          <Button variant="outline" size="sm" on:click={handleInstallClick}>
+            Install App
+          </Button>
+        {/if}
         {#if stage === 'control'}
           <Button variant="outline" size="sm" on:click={resetToConfigure}>
             {$_('button_logout')}
@@ -198,9 +342,12 @@
           deviceId={credentials.deviceId}
           connection={connection}
           actionError={formError}
-          on:logout={resetToConfigure}
+          autoTrigger={autoTrigger && !autoTriggerHandled}
+          autoOpenPreference={autoOpenEnabled}
           on:reconnect={handleReconnect}
           on:trigger={handleTrigger}
+          on:autoTriggered={handleAutoTriggered}
+          on:autoOpenChange={handleAutoOpenChange}
         />
       {/if}
     </section>

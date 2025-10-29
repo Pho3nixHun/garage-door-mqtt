@@ -1,4 +1,4 @@
-﻿{
+{
   "app_title": "Garage Door Remote",
   "app_subtitle": "Open your garage safely through the secure cloud connection.",
   "connect_title": "Connect to your door",
@@ -9,10 +9,10 @@
   "placeholder_password": "password",
   "remember_label": "Remember these details on this device",
   "button_continue": "Continue",
-  "button_connecting": "Connecting…",
+  "button_connecting": "Connecting...",
   "status_ready": "Ready",
   "status_opening": "Opening",
-  "status_cooling": "Cooling Down",
+  "status_cooling": "Cooling down",
   "status_waiting": "Waiting",
   "connection_online": "Online",
   "connection_offline": "Offline",
@@ -22,7 +22,7 @@
   "section_status": "Status",
   "section_connection": "Connection",
   "connection_connected": "Connected to the cloud.",
-  "connection_connecting": "Trying to connect…",
+  "connection_connecting": "Attempting to connect...",
   "connection_error": "Couldn't reach the cloud. Check your details.",
   "connection_disconnected": "Tap \"Try again\" to reconnect.",
   "button_try_again": "Try again",
@@ -30,14 +30,14 @@
   "cooldown_ready": "Ready to open.",
   "cooldown_wait": "Please wait {seconds}s before opening again.",
   "button_open": "Open garage door",
-  "button_opening": "Opening…",
-  "button_cooling": "Cooling down…",
+  "button_opening": "Opening...",
+  "button_cooling": "Cooling down...",
   "button_disabled": "Unavailable",
   "open_note": "This button sends a secure open signal through your managed MQTT broker.",
+  "auto_open_label": "Auto-open when the app starts",
   "footer_note": "Keep your broker credentials safe. Contact your installer if you need help.",
   "error_missing_details": "Please fill in all fields.",
   "error_connection_start": "Could not start connection.",
   "error_open_signal": "Unable to send the open signal.",
   "language_label": "Language"
 }
-

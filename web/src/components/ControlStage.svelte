@@ -9,12 +9,17 @@
   const dispatch = createEventDispatcher<{
     trigger: void;
     reconnect: void;
-    logout: void;
+    autoTriggered: void;
+    autoOpenChange: boolean;
   }>();
+
+  const AUTO_OPEN_STORAGE_KEY = 'garage-door-web::auto-open';
 
   export let deviceId = "";
   export let connection: MqttStoreValue;
   export let actionError: string | null = null;
+  export let autoTrigger = false;
+  export let autoOpenPreference = false;
 
   let t: (key: string, vars?: Record<string, string | number>) => string = (key) => key;
   $: t = $_;
@@ -48,6 +53,8 @@
   $: statusTone = getStatusTone(garageState);
 
   let countdown = 0;
+  let autoTriggerFired = false;
+  let autoOpenChecked = autoOpenPreference;
 
   $: {
     const remainingMs = connection.cooldownMs ?? 0;
@@ -62,11 +69,25 @@
         countdown = Math.max(0, countdown - 1);
       }
     }, 1000);
+
+    if (typeof window !== 'undefined') {
+      const stored = window.localStorage.getItem(AUTO_OPEN_STORAGE_KEY);
+      if (stored !== null) {
+        const value = stored === '1';
+        if (value !== autoOpenChecked) {
+          autoOpenChecked = value;
+          dispatch('autoOpenChange', value);
+        }
+      }
+    }
   });
 
   $: isConnecting = connection.status === "connecting";
   $: isConnected = connection.status === "connected";
   $: canOpen = isConnected && garageState === "LISTENING";
+  $: if (autoOpenPreference !== autoOpenChecked) {
+    autoOpenChecked = autoOpenPreference;
+  }
 
   const handleTrigger = () => dispatch("trigger");
   const handleReconnect = () => dispatch("reconnect");
@@ -76,6 +97,32 @@
       countdown = 0;
     }
   }
+
+  $: {
+    if (!autoTrigger && !autoOpenChecked) {
+      autoTriggerFired = false;
+    }
+  }
+
+  $: {
+    if ((autoTrigger || autoOpenChecked) && !autoTriggerFired && canOpen) {
+      handleTrigger();
+      autoTriggerFired = true;
+      dispatch("autoTriggered");
+    }
+  }
+
+  const handleAutoOpenToggle = (event: Event) => {
+    const target = event.currentTarget as HTMLInputElement;
+    autoOpenChecked = target.checked;
+    if (typeof window !== 'undefined') {
+      window.localStorage.setItem(
+        AUTO_OPEN_STORAGE_KEY,
+        autoOpenChecked ? '1' : '0'
+      );
+    }
+    dispatch('autoOpenChange', autoOpenChecked);
+  };
 
   onDestroy(() => {
     if (interval !== undefined) {
@@ -109,6 +156,21 @@
         </div>
       {/if}
 
+      <label class="flex items-center gap-3 text-sm text-emerald-200/80">
+        <span class="relative inline-flex h-6 w-11 items-center">
+          <input
+            type="checkbox"
+            class="peer absolute inset-0 h-full w-full cursor-pointer opacity-0"
+            checked={autoOpenChecked}
+            on:change={handleAutoOpenToggle}
+            aria-label={t('auto_open_label')}
+          />
+          <span class="h-5 w-9 rounded-full border border-emerald-400/70 bg-transparent transition-colors duration-200 peer-checked:border-emerald-500 peer-checked:bg-emerald-500 peer-focus-visible:outline peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-emerald-300"></span>
+          <span class="absolute left-0.5 top-0.5 h-4 w-4 rounded-full bg-emerald-200 transition-transform duration-200 peer-checked:translate-x-[18px]"></span>
+        </span>
+        <span>{t('auto_open_label')}</span>
+      </label>
+
       {#if actionError}
         <div class="rounded-xl border border-rose-400/40 bg-rose-500/15 px-4 py-3 text-sm text-rose-100">
           {actionError}
@@ -133,5 +195,3 @@
     </div>
   </Card>
 </div>
-
-
