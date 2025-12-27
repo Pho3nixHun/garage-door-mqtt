@@ -82,3 +82,36 @@ body {
   width: min(100%, 640px);
   backdrop-filter: blur(12px);
 }
+
+@media (orientation: landscape) and (max-width: 900px) {
+  .oasis-overlay {
+    display: grid;
+    grid-template-columns: minmax(200px, 260px) minmax(0, 1fr);
+    grid-template-rows: auto;
+    gap: 1.5rem;
+    align-items: start;
+    padding: 1.5rem 1.25rem 2rem;
+  }
+
+  .oasis-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1rem;
+  }
+
+  .oasis-header-controls {
+    width: 100%;
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: center;
+  }
+
+  .oasis-logo {
+    max-width: 100%;
+    width: 140px;
+  }
+
+  .oasis-content {
+    padding-bottom: 0;
+  }
+}
