@@ -28,13 +28,12 @@
   };
 </script>
 
-<Dropdown let:toggle let:open let:close align="right">
+<Dropdown let:toggle let:open let:close align="right" className="language-dropdown">
   <Button
     slot="trigger"
     variant="outline"
     size="sm"
     className="language-trigger"
-    on:click={(event) => { event.stopPropagation(); toggle(); }}
     aria-haspopup="listbox"
     aria-expanded={open}
     aria-label={currentLocale.toUpperCase()}
@@ -100,6 +99,4 @@
     border: 0;
   }
 </style>
-
-
 

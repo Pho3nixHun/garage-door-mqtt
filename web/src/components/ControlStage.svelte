@@ -176,10 +176,6 @@
           {actionError}
         </div>
       {/if}
-
-      <p class="text-xs text-emerald-200/70">
-        {t('open_note')}
-      </p>
     </div>
 
     <div slot="footer">
