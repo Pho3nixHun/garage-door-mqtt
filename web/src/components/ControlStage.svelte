@@ -109,11 +109,6 @@
       handleTrigger();
       autoTriggerFired = true;
       dispatch("autoTriggered");
-      if (typeof window !== 'undefined') {
-        setTimeout(() => {
-          window.close();
-        }, 1000);
-      }
     }
   }
 
